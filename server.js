@@ -18,16 +18,15 @@ connection.connect(function(err) {
   if (err) throw err;
   console.log(err)
   console.log (`
-  _______________________________________________________
-       ____  _  _  ____  __     __  _  _  ____  ____       
-      (  __)( \/ )(  _ \(  )   /  \( \/ )(  __)(  __)      
-       ) _) / \/ \ ) __// (_/\(  O ))  /  ) _)  ) _)       
-      (____)\_)(_/(__)  \____/ \__/(__/  (____)(____)      
-       _  _   __   __ _   __    ___  ____  ____            
-      ( \/ ) / _\ (  ( \ / _\  / __)(  __)(  _ \           
-      / \/ \/    \/    //    \( (_ \ ) _)  )   /           
-      \_)(_/\_/\_/\_)__)\_/\_/ \___/(____)(__\_)     
-  _______________________________________________________`)
+  ____  _  _  ____  __     __  _  _  ____  ____       
+ (  __)( \/ )(  _ \(  )   /  \( \/ )(  __)(  __)      
+  ) _) / \/ \ ) __// (_/\(  O ))  /  ) _)  ) _)       
+ (____)\_)(_/(__)  \____/ \__/(__/  (____)(____)      
+   ____  ____   __    ___  __ _  ____  ____            
+  (_  _)(  _ \ / _\  / __)(  / )(  __)(  _ \           
+    )(   )   //    \( (__  )  (  ) _)  )   /           
+   (__) (__\_)\_/\_/ \___)(__\_)(____)(__\_) `)
+   
     startapp();
 });
 
@@ -73,7 +72,7 @@ function startapp() {
 // View all Roles
 function viewAllRoles () {
   connection.query(
-    "SELECT emp_role.id, emp_role.title, emp_role.salary, emp_role.department_id, department.id, department.emp_name FROM emp_role LEFT JOIN department on emp_role.department_id = department.id", 
+    "SELECT emp_role.id, emp_role.title, emp_role.salary, emp_role.department_id, department.id, department.dept_name FROM emp_role LEFT JOIN department on emp_role.department_id = department.id", 
     function(err, result, fields) {
       if (err) throw err;
       console.table(result);
@@ -97,7 +96,7 @@ function viewAllEmployees () {
 // View all Departments
 function viewAllDepartments () {
   connection.query(
-    "SELECT employee.id, employee.first_name, employee.last_name, employee.role_id, employee.manager_id, emp_role.title, emp_role.salary, emp_role.id, department.id FROM employee LEFT JOIN emp_role ON employee.role_id = emp_role.id LEFT JOIN department ON emp_role.department_id = department.id", 
+    "SELECT * FROM department", 
     function(err, result, fields) {
       if (err) throw err;
       console.table(result);
@@ -153,54 +152,16 @@ function addEmployee() {
   },
 ])
 .then(function (answer) {
-  // Map role name to its corresponding ID in the database
-  mapRoleNameToId(answer.newRole)
-    .then((roleId) => {
-      // Map manager name to its corresponding ID in the database
-      return mapManagerNameToId(answer.newManagerName)
-        .then((managerId) => {
-          connection.query(
-            "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)",
-            [
-              answer.newFirstName,
-              answer.newLastName,
-              roleId,
-              managerId,
-            ],
-            function (err, res) {
-              if (err) throw err;
-              console.table(res);
-              console.log(
-                `Added ${answer.newFirstName} ${answer.newLastName} to the database`
-              );
-              startapp();
-            }
-          );
-        });
-    })
-    .catch((error) => {
-      console.error(error.message);
-    });
-});
-}
-
-function mapManagerNameToId(managerName) {
-  return new Promise((resolve, reject) => {
-    const [firstName, lastName] = managerName.split(" ");
-    connection.query(
-      "SELECT id FROM employee WHERE first_name = ? AND last_name = ?",
-      [firstName, lastName],
-      function (err, results) {
-        if (err) {
-          reject(err);
-        } else if (results.length === 0) {
-          reject(new Error("Manager not found"));
-        } else {
-          resolve(results[0].id);
-        }
-      }
-    );
+  var getNewRoleId =answer.newRole.split("-")
+  var getNewManagerId=answer.newManagerName.split("-")
+  connection.query( 
+  `INSERT INTO employee (first_name, last_name, role_id, manager_id)
+   VALUES ('${answer.newFirstName}','${answer.newLastName}','${getNewRoleId[0]}','${getNewManagerId[0]}')`);
+  connection.query(query, function(err, res) {
+    console.log(`new employee ${answer.newFirstName} ${answer.newLastName} added!`)
   });
+  startapp();
+});
 }
 
 function updateEmployeeRole() {
@@ -298,10 +259,10 @@ inquirer
 },
 ])
 .then(function(answer) {
-  connection.query("INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)", [answer.roleName, answer.roleSalary, answer.roleDepartment],function(err, res) {
+  connection.query(`INSERT INTO emp_role (title, salary, department_id) VALUES ('${answer.roleName}', '${answer.roleSalary}', '${answer.roleDepartment}')`,function(err, res) {
     if (err) throw err;
     console.table(res);
-    console.log(`Added ${roleName} to the database`)
+    console.log(`Added ${answer.roleName} to the database`)
     startapp();
   });
 });
@@ -316,10 +277,10 @@ function addDepartment() {
   },
 ])
 .then(function(answer) {
-  connection.query("INSERT INTO department (name) VALUES (?)", [answer.newDept],function(err, res) {
+  connection.query(`INSERT INTO department (dept_name) VALUES ('${answer.newDept}')`, function(err, res) {
     if (err) throw err;
     console.table(res);
-    console.log(`Added ${newDept} to the database`)
+    console.log(`Added ${answer.newDept} to the database`)
     startapp();
   });
 });
