@@ -24,8 +24,8 @@
   ## Usage
   Screenshots, GIF and Walkthrough link are below...
   ![Screenshot of application](./Assets/Screenshot.png)
-  ![GIF demo] ()
-   [Link to Video demonstration on Google Drive] ()
+  ![GIF demo](./Assets/employee-tracker.mp4)
+   [Link to Video demonstration on Google Drive] (https://drive.google.com/file/d/1tbkwaEC-oWnR0q2Hg8LZFflc7x431MkD/view)
 
   ## Licenses
   This project is covered under the MIT license.

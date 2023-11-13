@@ -156,14 +156,16 @@ function addEmployee() {
   var getNewManagerId=answer.newManagerName.split("-")
   connection.query( 
   `INSERT INTO employee (first_name, last_name, role_id, manager_id)
-   VALUES ('${answer.newFirstName}','${answer.newLastName}','${getNewRoleId[0]}','${getNewManagerId[0]}')`);
-  connection.query(query, function(err, res) {
-    console.log(`new employee ${answer.newFirstName} ${answer.newLastName} added!`)
+   VALUES ('${answer.newFirstName}','${answer.newLastName}','${getNewRoleId[0]}','${getNewManagerId[0]}')`, function(err, res) {
+    if (err) throw err;
+    console.table(res);
+    console.log(`New employee ${answer.newFirstName} ${answer.newLastName} added!`)
   });
   startapp();
 });
 }
 
+//Update Employee Role
 function updateEmployeeRole() {
   inquirer
   .prompt([{
@@ -199,12 +201,9 @@ function updateEmployeeRole() {
 ])
 
 .then(function (answer) {
-  // Map role name to its corresponding ID in the database
   const roleId = mapRoleNameToId(answer.eeRoleChoice);
-
   connection.query(
-    "UPDATE employee SET role_id=? WHERE first_name= ?",
-    [roleId, answer.eeRoleUpdate],
+    `UPDATE employee SET (role_id) WHERE ('${first_name}, '${roleId}, '${answer.eeRoleUpdate}')`,
     function (err, res) {
       if (err) throw err;
       console.table(res);
