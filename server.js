@@ -73,7 +73,7 @@ function startapp() {
 // View all Roles
 function viewAllRoles () {
   connection.query(
-    "SELECT * FROM emp_role", 
+    "SELECT emp_role.id, emp_role.title, emp_role.salary, emp_role.department_id, department.id, department.emp_name FROM emp_role LEFT JOIN department on emp_role.department_id = department.id", 
     function(err, result, fields) {
       if (err) throw err;
       console.table(result);
@@ -85,7 +85,7 @@ function viewAllRoles () {
 // View all Employees
 function viewAllEmployees () {
   connection.query(
-    "SELECT * FROM employee", 
+    "SELECT employee.id, employee.first_name, employee.last_name, employee.role_id, employee.manager_id, emp_role.title, emp_role.salary, emp_role.id, department.id FROM employee LEFT JOIN emp_role ON employee.role_id = emp_role.id LEFT JOIN department ON emp_role.department_id = department.id", 
     function(err, result, fields) {
       if (err) throw err;
       console.table(result);
@@ -97,7 +97,7 @@ function viewAllEmployees () {
 // View all Departments
 function viewAllDepartments () {
   connection.query(
-    "SELECT * FROM department", 
+    "SELECT employee.id, employee.first_name, employee.last_name, employee.role_id, employee.manager_id, emp_role.title, emp_role.salary, emp_role.id, department.id FROM employee LEFT JOIN emp_role ON employee.role_id = emp_role.id LEFT JOIN department ON emp_role.department_id = department.id", 
     function(err, result, fields) {
       if (err) throw err;
       console.table(result);
@@ -152,14 +152,55 @@ function addEmployee() {
     ],
   },
 ])
-.then(function(answer) {
-  connection.query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [answer.newFirstName, answer.newLastName, answer.newRoleID, answer.newManagerID], function(err, res) {
-    if (err) throw err;
-    console.table(res);
-    console.log(`Added ${newFirstName} ${newLastName} to the database`)
-    startapp();
+.then(function (answer) {
+  // Map role name to its corresponding ID in the database
+  mapRoleNameToId(answer.newRole)
+    .then((roleId) => {
+      // Map manager name to its corresponding ID in the database
+      return mapManagerNameToId(answer.newManagerName)
+        .then((managerId) => {
+          connection.query(
+            "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)",
+            [
+              answer.newFirstName,
+              answer.newLastName,
+              roleId,
+              managerId,
+            ],
+            function (err, res) {
+              if (err) throw err;
+              console.table(res);
+              console.log(
+                `Added ${answer.newFirstName} ${answer.newLastName} to the database`
+              );
+              startapp();
+            }
+          );
+        });
+    })
+    .catch((error) => {
+      console.error(error.message);
+    });
 });
-});
+}
+
+function mapManagerNameToId(managerName) {
+  return new Promise((resolve, reject) => {
+    const [firstName, lastName] = managerName.split(" ");
+    connection.query(
+      "SELECT id FROM employee WHERE first_name = ? AND last_name = ?",
+      [firstName, lastName],
+      function (err, results) {
+        if (err) {
+          reject(err);
+        } else if (results.length === 0) {
+          reject(new Error("Manager not found"));
+        } else {
+          resolve(results[0].id);
+        }
+      }
+    );
+  });
 }
 
 function updateEmployeeRole() {
@@ -195,14 +236,41 @@ function updateEmployeeRole() {
     ],
   },
 ])
-.then(function(answer) {
-  connection.query('UPDATE employee SET role_id=? WHERE first_name= ?',[answer.eeRoleUpdate, answer.eeRoleChoice],function(err, res) {
-    if (err) throw err;
-    console.table(res);
-    console.log(`Updated ${newFirstName} ${newLastName}'s role in the database`)
-    startapp();
-  });
+
+.then(function (answer) {
+  // Map role name to its corresponding ID in the database
+  const roleId = mapRoleNameToId(answer.eeRoleChoice);
+
+  connection.query(
+    "UPDATE employee SET role_id=? WHERE first_name= ?",
+    [roleId, answer.eeRoleUpdate],
+    function (err, res) {
+      if (err) throw err;
+      console.table(res);
+      console.log(
+        `Updated ${answer.eeRoleUpdate}'s role in the database`
+      );
+      startapp();
+    }
+  );
 });
+}
+function mapRoleNameToId(roleName) {
+  return new Promise((resolve, reject) => {
+    connection.query(
+      "SELECT id FROM emp_role WHERE title = ?",
+      [roleName],
+      function (err, results) {
+        if (err) {
+          reject(err);
+        } else if (results.length === 0) {
+          reject(new Error("Role not found"));
+        } else {
+          resolve(results[0].id);
+        }
+      }
+    );
+  });
 }
 
 function addRole() {
